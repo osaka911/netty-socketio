@@ -155,6 +155,9 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
         if (sslContext != null) {
             SSLEngine engine = sslContext.createSSLEngine();
             engine.setUseClientMode(false);
+            if (configuration.isNeedClientAuth() &&(configuration.getTrustStore() != null)) {
+                engine.setNeedClientAuth(true);
+            }
             pipeline.addLast(SSL_HANDLER, new SslHandler(engine));
         }
     }
@@ -169,7 +172,7 @@ public class SocketIOChannelInitializer extends ChannelInitializer<Channel> impl
         pipeline.addLast(HTTP_AGGREGATOR, new HttpObjectAggregator(configuration.getMaxHttpContentLength()) {
             @Override
             protected Object newContinueResponse(HttpMessage start, int maxContentLength,
-                    ChannelPipeline pipeline) {
+                                                 ChannelPipeline pipeline) {
                 return null;
             }
 
