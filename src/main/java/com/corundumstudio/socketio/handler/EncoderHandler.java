@@ -65,6 +65,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
+import io.netty.util.internal.StringUtil;
 
 @Sharable
 public class EncoderHandler extends ChannelOutboundHandlerAdapter {
@@ -117,8 +118,8 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
         HttpResponse res = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.OK);
 
         res.headers().add(HttpHeaderNames.SET_COOKIE, "io=" + msg.getSessionId())
-                    .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
-                    .add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, HttpHeaderNames.CONTENT_TYPE);
+            .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
+            .add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, HttpHeaderNames.CONTENT_TYPE);
 
         String origin = ctx.channel().attr(ORIGIN).get();
         addOriginHeaders(origin, res);
@@ -137,7 +138,7 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
         HttpResponse res = new DefaultHttpResponse(HTTP_1_1, status);
 
         res.headers().add(HttpHeaderNames.CONTENT_TYPE, type)
-                    .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+            .add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         if (msg.getSessionId() != null) {
             res.headers().add(HttpHeaderNames.SET_COOKIE, "io=" + msg.getSessionId());
         }
@@ -176,7 +177,7 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
 
         channel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT, promise).addListener(ChannelFutureListener.CLOSE);
     }
-    
+
     private void sendError(HttpErrorMessage errorMsg, ChannelHandlerContext ctx, ChannelPromise promise) throws IOException {
         final ByteBuf encBuf = encoder.allocateBuffer(ctx.alloc());
         ByteBufOutputStream out = new ByteBufOutputStream(encBuf);
@@ -200,6 +201,9 @@ public class EncoderHandler extends ChannelOutboundHandlerAdapter {
             } else {
                 res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
             }
+        }
+        if(configuration.getAllowHeaders() != null){
+            res.headers().add(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, configuration.getAllowHeaders());
         }
     }
 

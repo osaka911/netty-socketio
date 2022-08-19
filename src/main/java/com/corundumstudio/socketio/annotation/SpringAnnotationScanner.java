@@ -15,7 +15,6 @@
  */
 package com.corundumstudio.socketio.annotation;
 
-import com.corundumstudio.socketio.listener.ClientListeners;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -26,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.MethodCallback;
 import org.springframework.util.ReflectionUtils.MethodFilter;
@@ -38,11 +36,15 @@ public class SpringAnnotationScanner implements BeanPostProcessor {
     private static final Logger log = LoggerFactory.getLogger(SpringAnnotationScanner.class);
 
     private final List<Class<? extends Annotation>> annotations =
-                    Arrays.asList(OnConnect.class, OnDisconnect.class, OnEvent.class);
+        Arrays.asList(OnConnect.class, OnDisconnect.class, OnEvent.class);
 
     private final SocketIOServer socketIOServer;
 
     private Class originalBeanClass;
+
+    private Object originalBean;
+
+    private String originalBeanName;
 
     public SpringAnnotationScanner(SocketIOServer socketIOServer) {
         super();
@@ -52,16 +54,11 @@ public class SpringAnnotationScanner implements BeanPostProcessor {
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         if (originalBeanClass != null) {
-            String namespace = getNamespace(bean);
-            ClientListeners clientListeners =
-                namespace.isEmpty() ? socketIOServer : socketIOServer.addNamespace(namespace);
-            clientListeners.addListeners(bean, originalBeanClass);
-
-            log.info("{} bean listeners added into namespace {}", beanName, namespace);
-
+            socketIOServer.addListeners(originalBean, originalBeanClass);
+            log.info("{} bean listeners added", originalBeanName);
             originalBeanClass = null;
+            originalBeanName = null;
         }
-
         return bean;
     }
 
@@ -69,38 +66,31 @@ public class SpringAnnotationScanner implements BeanPostProcessor {
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
         final AtomicBoolean add = new AtomicBoolean();
         ReflectionUtils.doWithMethods(bean.getClass(),
-                new MethodCallback() {
-            @Override
-            public void doWith(Method method) throws IllegalArgumentException,
-            IllegalAccessException {
-                add.set(true);
-            }
-        },
-        new MethodFilter() {
-            @Override
-            public boolean matches(Method method) {
-                for (Class<? extends Annotation> annotationClass : annotations) {
-                    if (method.isAnnotationPresent(annotationClass)) {
-                        return true;
-                    }
+            new MethodCallback() {
+                @Override
+                public void doWith(Method method) throws IllegalArgumentException,
+                    IllegalAccessException {
+                    add.set(true);
                 }
-                return false;
-            }
-        });
+            },
+            new MethodFilter() {
+                @Override
+                public boolean matches(Method method) {
+                    for (Class<? extends Annotation> annotationClass : annotations) {
+                        if (method.isAnnotationPresent(annotationClass)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            });
 
         if (add.get()) {
             originalBeanClass = bean.getClass();
+            originalBean = bean;
+            originalBeanName = beanName;
         }
         return bean;
     }
 
-    private String getNamespace(Object bean) {
-        String namespace = "";
-        Annotation annotation = AnnotationUtils.findAnnotation(bean.getClass(), Namespace.class);
-        if (annotation != null) {
-            namespace = (String) AnnotationUtils.getValue(annotation);
-        }
-
-        return namespace;
-    }
 }

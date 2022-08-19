@@ -80,7 +80,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
     private final ClientsBox clientsBox;
 
     public AuthorizeHandler(String connectPath, CancelableScheduler scheduler, Configuration configuration, NamespacesHub namespacesHub, StoreFactory storeFactory,
-            DisconnectableHub disconnectable, AckManager ackManager, ClientsBox clientsBox) {
+                            DisconnectableHub disconnectable, AckManager ackManager, ClientsBox clientsBox) {
         super();
         this.connectPath = connectPath;
         this.configuration = configuration;
@@ -116,7 +116,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
             QueryStringDecoder queryDecoder = new QueryStringDecoder(req.uri());
 
             if (!configuration.isAllowCustomRequests()
-                    && !queryDecoder.path().startsWith(connectPath)) {
+                && !queryDecoder.path().startsWith(connectPath)) {
                 HttpResponse res = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
                 channel.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE);
                 req.release();
@@ -125,7 +125,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
 
             List<String> sid = queryDecoder.parameters().get("sid");
             if (queryDecoder.path().equals(connectPath)
-                    && sid == null) {
+                && sid == null) {
                 String origin = req.headers().get(HttpHeaderNames.ORIGIN);
                 if (!authorize(ctx, channel, origin, queryDecoder.parameters(), req)) {
                     req.release();
@@ -138,7 +138,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
     }
 
     private boolean authorize(ChannelHandlerContext ctx, Channel channel, String origin, Map<String, List<String>> params, FullHttpRequest req)
-            throws IOException {
+        throws IOException {
         Map<String, List<String>> headers = new HashMap<String, List<String>>(req.headers().names().size());
         for (String name : req.headers().names()) {
             List<String> values = req.headers().getAll(name);
@@ -146,9 +146,9 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         }
 
         HandshakeData data = new HandshakeData(req.headers(), params,
-                (InetSocketAddress)channel.remoteAddress(),
-                (InetSocketAddress)channel.localAddress(),
-                req.uri(), origin != null && !origin.equalsIgnoreCase("null"));
+            (InetSocketAddress)channel.remoteAddress(),
+            (InetSocketAddress)channel.localAddress(),
+            req.uri(), origin != null && !origin.equalsIgnoreCase("null"));
 
         boolean result = false;
         try {
@@ -160,7 +160,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         if (!result) {
             HttpResponse res = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.UNAUTHORIZED);
             channel.writeAndFlush(res)
-                    .addListener(ChannelFutureListener.CLOSE);
+                .addListener(ChannelFutureListener.CLOSE);
             log.debug("Handshake unauthorized, query params: {} headers: {}", params, headers);
             return false;
         }
@@ -175,20 +175,21 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         List<String> transportValue = params.get("transport");
         if (transportValue == null) {
             log.error("Got no transports for request {}", req.uri());
-
-            HttpResponse res = new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.UNAUTHORIZED);
-            channel.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE);
+            writeAndFlushTransportError(channel, origin);
             return false;
         }
 
-        Transport transport = Transport.byName(transportValue.get(0));
+        Transport transport = null;
+        try {
+            transport = Transport.valueOf(transportValue.get(0));
+        } catch (IllegalArgumentException e) {
+            log.error("Unknown transport for request {}", req.uri());
+            writeAndFlushTransportError(channel, origin);
+            return false;
+        }
         if (!configuration.getTransports().contains(transport)) {
-            Map<String, Object> errorData = new HashMap<String, Object>();
-            errorData.put("code", 0);
-            errorData.put("message", "Transport unknown");
-
-            channel.attr(EncoderHandler.ORIGIN).set(origin);
-            channel.writeAndFlush(new HttpErrorMessage(errorData));
+            log.error("Unsupported transport for request {}", req.uri());
+            writeAndFlushTransportError(channel, origin);
             return false;
         }
 
@@ -202,7 +203,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         }
 
         AuthPacket authPacket = new AuthPacket(sessionId, transports, configuration.getPingInterval(),
-                configuration.getPingTimeout());
+            configuration.getPingTimeout());
         Packet packet = new Packet(PacketType.OPEN);
         packet.setData(authPacket);
         client.send(packet);
@@ -210,6 +211,15 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         client.schedulePingTimeout();
         log.debug("Handshake authorized for sessionId: {}, query params: {} headers: {}", sessionId, params, headers);
         return true;
+    }
+
+    private void writeAndFlushTransportError(Channel channel, String origin) {
+        Map<String, Object> errorData = new HashMap<String, Object>();
+        errorData.put("code", 0);
+        errorData.put("message", "Transport unknown");
+
+        channel.attr(EncoderHandler.ORIGIN).set(origin);
+        channel.writeAndFlush(new HttpErrorMessage(errorData));
     }
 
     /**
