@@ -181,7 +181,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
 
         Transport transport = null;
         try {
-            transport = Transport.valueOf(transportValue.get(0));
+            transport = Transport.valueOf(transportValue.get(0).toUpperCase());
         } catch (IllegalArgumentException e) {
             log.debug("=====transport list: " + transportValue);
             log.error("Unknown transport for request {}", req.uri());
@@ -279,5 +279,4 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
     public void onDisconnect(ClientHead client) {
         clientsBox.removeClient(client.getSessionId());
     }
-
 }
