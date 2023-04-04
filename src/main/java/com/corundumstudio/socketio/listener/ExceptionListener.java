@@ -29,7 +29,10 @@ public interface ExceptionListener {
 
     void onConnectException(Exception e, SocketIOClient client);
 
+    @Deprecated
     void onPingException(Exception e, SocketIOClient client);
+
+    void onPongException(Exception e, SocketIOClient client);
 
     boolean exceptionCaught(ChannelHandlerContext ctx, Throwable e) throws Exception;
 

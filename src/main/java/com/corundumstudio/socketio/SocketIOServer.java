@@ -276,6 +276,11 @@ public class SocketIOServer implements ClientListeners {
     }
 
     @Override
+    public void addPongListener(PongListener listener) {
+        mainNamespace.addPongListener(listener);
+    }
+
+    @Override
     public void addListeners(Object listeners) {
         mainNamespace.addListeners(listeners);
     }

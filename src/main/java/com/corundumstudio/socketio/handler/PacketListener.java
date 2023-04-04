@@ -67,6 +67,13 @@ public class PacketListener {
             break;
         }
 
+        case PONG: {
+            client.getBaseClient().schedulePingTimeout();
+            Namespace namespace = namespacesHub.get(packet.getNsp());
+            namespace.onPong(client);
+            break;
+        }
+
         case UPGRADE: {
             client.getBaseClient().schedulePingTimeout();
 
