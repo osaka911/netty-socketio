@@ -228,10 +228,12 @@ public class ClientHead {
     }
 
     public void disconnect() {
-        ChannelFuture future = send(new Packet(PacketType.DISCONNECT));
-		if(future != null) {
-			future.addListener(ChannelFutureListener.CLOSE);
-		}
+        Packet packet = new Packet(PacketType.MESSAGE);
+        packet.setSubType(PacketType.DISCONNECT);
+        ChannelFuture future = send(packet);
+        if(future != null) {
+          future.addListener(ChannelFutureListener.CLOSE);
+        }
 
         onChannelDisconnect();
     }
