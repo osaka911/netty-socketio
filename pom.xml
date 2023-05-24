@@ -53,7 +53,7 @@
      <jackson.version>2.14.0-rc1</jackson.version>
      <slf4j-api.version>1.7.36</slf4j-api.version>
      <hazelcast-client.version>3.12.12</hazelcast-client.version>
-     <spring.verion>5.3.22</spring.verion>
+     <spring.verion>5.3.26</spring.verion>
      <maven-gpg-plugin.version>1.4</maven-gpg-plugin.version>
  </properties>
 
