@@ -120,6 +120,8 @@ public abstract class BaseStoreFactory implements StoreFactory {
         }, BulkJoinLeaveMessage.class);
     }
 
+    protected abstract PubSubStore createPubSubStore();
+
     @Override
     public abstract PubSubStore pubSubStore();
 
