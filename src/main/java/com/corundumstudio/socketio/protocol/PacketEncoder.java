@@ -195,14 +195,12 @@ public class PacketEncoder {
 
         // Fall thru to fast mode for smaller numbers
         // assert(i <= 65536, i);
-        for (;;) {
+        do {
             q = (i * 52429) >>> (16 + 3);
             r = i - ((q << 3) + (q << 1)); // r = i-(q*10) ...
-            buf[--charPos] = (byte) digits[(int)r];
+            buf[--charPos] = (byte) digits[(int) r];
             i = q;
-            if (i == 0)
-                break;
-        }
+        } while (i != 0);
         if (sign != 0) {
             buf[--charPos] = sign;
         }
@@ -216,14 +214,25 @@ public class PacketEncoder {
     }
 
     public static byte[] longToBytes(long number) {
-        // TODO optimize
-        int length = (int)(Math.log10(number)+1);
-        byte[] res = new byte[length];
-        int i = length;
-        while (number > 0) {
-            res[--i] = (byte) (number % 10);
-            number = number / 10;
+        if (number == 0) {
+            return new byte[]{ 0 };
         }
+
+        int length = 1; // length of number digits
+        long temp = number;
+        while (temp > 9) {
+            length++;
+            temp /= 10;
+        }
+
+        byte[] res = new byte[length];
+        int index = length - 1;
+
+        while (number != 0) {
+            res[index--] = (byte) (number % 10);
+            number /= 10;
+        }
+
         return res;
     }
 
