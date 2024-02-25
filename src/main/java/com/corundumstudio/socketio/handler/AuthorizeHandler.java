@@ -22,7 +22,9 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.protocol.*;
+import com.corundumstudio.socketio.store.Store;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,9 @@ import com.corundumstudio.socketio.ack.AckManager;
 import com.corundumstudio.socketio.messages.HttpErrorMessage;
 import com.corundumstudio.socketio.namespace.Namespace;
 import com.corundumstudio.socketio.namespace.NamespacesHub;
+import com.corundumstudio.socketio.protocol.AuthPacket;
+import com.corundumstudio.socketio.protocol.Packet;
+import com.corundumstudio.socketio.protocol.PacketType;
 import com.corundumstudio.socketio.scheduler.CancelableScheduler;
 import com.corundumstudio.socketio.scheduler.SchedulerKey;
 import com.corundumstudio.socketio.scheduler.SchedulerKey.Type;
@@ -145,8 +150,11 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
             req.uri(), origin != null && !origin.equalsIgnoreCase("null"));
 
         boolean result = false;
+        Map<String, Object> storeParams = Collections.emptyMap();
         try {
-            result = configuration.getAuthorizationListener().isAuthorized(data);
+            AuthorizationResult authResult = configuration.getAuthorizationListener().getAuthorizationResult(data);
+            result = authResult.isAuthorized();
+            storeParams = authResult.getStoreParams();
         } catch (Exception e) {
             log.error("Authorization error", e);
         }
@@ -177,7 +185,6 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         try {
             transport = Transport.valueOf(transportValue.get(0).toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            log.debug("=====transport list: " + transportValue);
             log.error("Unknown transport for request {}", req.uri());
             writeAndFlushTransportError(channel, origin);
             return false;
@@ -189,6 +196,8 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         }
 
         ClientHead client = new ClientHead(sessionId, ackManager, disconnectable, storeFactory, data, clientsBox, transport, scheduler, configuration, params);
+        Store store = client.getStore();
+        storeParams.forEach(store::set);
         channel.attr(ClientHead.CLIENT).set(client);
         clientsBox.addClient(client);
 
