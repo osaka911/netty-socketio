@@ -104,6 +104,10 @@ public class Packet implements Serializable {
     }
 
     public void setNsp(String endpoint) {
+        // temporary fix for V3-4 namespaces compatibility
+        if ("{}".equals(endpoint)) {
+            endpoint = "";
+        }
         this.nsp = endpoint;
     }
 
