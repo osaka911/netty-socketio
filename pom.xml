@@ -54,7 +54,7 @@
      <slf4j-api.version>1.7.36</slf4j-api.version>
      <hazelcast-client.version>3.12.12</hazelcast-client.version>
      <spring.verion>5.3.26</spring.verion>
-     <maven-gpg-plugin.version>1.4</maven-gpg-plugin.version>
+     <maven-gpg-plugin.version>1.5</maven-gpg-plugin.version>
  </properties>
 
  <profiles>

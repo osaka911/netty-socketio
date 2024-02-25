@@ -78,7 +78,6 @@ public class InPacketHandler extends SimpleChannelInboundHandler<PacketsMessage>
 
                 if (packet.getSubType() == PacketType.CONNECT) {
                     client.addNamespaceClient(ns);
-
                     //:TODO lyjnew client namespace send connect packet 0+namespace  socket io v4
                     // https://socket.io/docs/v4/socket-io-protocol/#connection-to-a-namespace
                     if (EngineIOVersion.V4.equals(client.getEngineIOVersion()))
