@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import com.corundumstudio.socketio.protocol.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +36,6 @@ import com.corundumstudio.socketio.ack.AckManager;
 import com.corundumstudio.socketio.messages.HttpErrorMessage;
 import com.corundumstudio.socketio.namespace.Namespace;
 import com.corundumstudio.socketio.namespace.NamespacesHub;
-import com.corundumstudio.socketio.protocol.AuthPacket;
-import com.corundumstudio.socketio.protocol.Packet;
-import com.corundumstudio.socketio.protocol.PacketType;
 import com.corundumstudio.socketio.scheduler.CancelableScheduler;
 import com.corundumstudio.socketio.scheduler.SchedulerKey;
 import com.corundumstudio.socketio.scheduler.SchedulerKey.Type;
@@ -190,7 +188,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
             return false;
         }
 
-        ClientHead client = new ClientHead(sessionId, ackManager, disconnectable, storeFactory, data, clientsBox, transport, scheduler, configuration);
+        ClientHead client = new ClientHead(sessionId, ackManager, disconnectable, storeFactory, data, clientsBox, transport, scheduler, configuration, params);
         channel.attr(ClientHead.CLIENT).set(client);
         clientsBox.addClient(client);
 
@@ -201,7 +199,7 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
 
         AuthPacket authPacket = new AuthPacket(sessionId, transports, configuration.getPingInterval(),
             configuration.getPingTimeout());
-        Packet packet = new Packet(PacketType.OPEN);
+        Packet packet = new Packet(PacketType.OPEN, client.getEngineIOVersion());
         packet.setData(authPacket);
         client.send(packet);
 
@@ -261,8 +259,11 @@ public class AuthorizeHandler extends ChannelInboundHandlerAdapter implements Di
         Namespace ns = namespacesHub.get(Namespace.DEFAULT_NAME);
 
         if (!client.getNamespaces().contains(ns)) {
-            Packet packet = new Packet(PacketType.MESSAGE);
+            Packet packet = new Packet(PacketType.MESSAGE, client.getEngineIOVersion());
             packet.setSubType(PacketType.CONNECT);
+            if (EngineIOVersion.V4.equals(client.getEngineIOVersion())) {
+                packet.setData(new ConnPacket(client.getSessionId()));
+            }
             client.send(packet);
 
             configuration.getStoreFactory().pubSubStore().publish(PubSubType.CONNECT, new ConnectMessage(client.getSessionId()));
