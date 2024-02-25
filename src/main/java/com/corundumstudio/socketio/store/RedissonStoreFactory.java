@@ -57,7 +57,7 @@ public class RedissonStoreFactory extends BaseStoreFactory {
         this.redisPub = redisPub;
         this.redisSub = redisSub;
 
-        this.pubSubStore = new RedissonPubSubStore(redisPub, redisSub, getNodeId(), topicPrefix);
+        this.pubSubStore = createPubSubStore();
     }
 
     @Override

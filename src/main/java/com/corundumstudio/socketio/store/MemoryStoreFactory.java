@@ -34,7 +34,7 @@ public class MemoryStoreFactory extends BaseStoreFactory {
 
     @Override
     protected PubSubStore createPubSubStore() {
-        return pubSubMemoryStore;
+        return new MemoryPubSubStore();
     }
 
     @Override
